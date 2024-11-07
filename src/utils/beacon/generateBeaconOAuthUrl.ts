@@ -13,32 +13,32 @@ export = async (userId: string) => {
 	const state = `${uuidv4()}`;
 	await db.codeChallenge.create({
 		data: {
-			challenge: challenge.challengeHash,
-			challengeVerifier: challenge.verifier,
+			challenge: challenge.codeChallenge,
+			challengeVerifier: challenge.codeVerifier,
 			state
 		}
 	});
 	console.log({
-		challenge: challenge.challengeHash,
-		challenge_verifier: challenge.verifier,
+		challenge: challenge.codeChallenge,
+		challenge_verifier: challenge.codeVerifier,
 		state,
 		url: `${config.beaconLoginUri}${beaconLoginQuery
 			.replace("{client-generated-state}", state)
 			.replace("{client-generated-rsa-public-key}", publicKey)
 			.replace("{client-id}", config.beaconClientId)
-			.replace("{client-generated-challenge}", challenge.challengeHash)
+			.replace("{client-generated-challenge}", challenge.codeChallenge)
 			.replace("{redirect-uri}", encodeURI(config.beaconRedirectUri))
 			.replace(/\n/g, "")}`
 	});
 	return {
-		challenge: challenge.challengeHash,
-		challenge_verifier: challenge.verifier,
+		challenge: challenge.codeChallenge,
+		challenge_verifier: challenge.codeVerifier,
 		state,
 		url: `${config.beaconLoginUri}${beaconLoginQuery
 			.replace("{client-generated-state}", state)
 			.replace("{client-generated-rsa-public-key}", publicKey)
 			.replace("{client-id}", config.beaconClientId)
-			.replace("{client-generated-challenge}", challenge.challengeHash)
+			.replace("{client-generated-challenge}", challenge.codeChallenge)
 			.replace("{redirect-uri}", encodeURI(config.beaconRedirectUri))
 			.replace(/\n/g, "")}`
 	};
