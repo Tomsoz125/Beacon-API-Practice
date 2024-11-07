@@ -1,4 +1,3 @@
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { v4 as uuidv4 } from "uuid";
 import config from "../../../config.ts";
 import { db } from "../../../db";
@@ -10,55 +9,37 @@ const beaconLoginQuery =
 
 export = async (userId: string) => {
 	const { publicKey } = getCurrentKeysHex();
-	let attemptCount = 0;
-	const maxAttempts = 5;
-
-	while (attemptCount < maxAttempts) {
-		const challenge = generateCodeChallenge();
-		const state = uuidv4();
-
-		try {
-			await db.codeChallenge.create({
-				data: {
-					challenge: challenge.base64,
-					challengeVerifier: challenge.verifier,
-					state
-				}
-			});
-
-			// If insert is successful, return the data
-			return {
-				challenge: challenge.base64,
-				challenge_verifier: challenge.verifier,
-				state,
-				url: `${config.beaconLoginUri}${beaconLoginQuery
-					.replace("{client-generated-state}", state)
-					.replace("{client-generated-rsa-public-key}", publicKey)
-					.replace("{client-id}", config.beaconClientId)
-					.replace("{client-generated-challenge}", challenge.base64)
-					.replace(
-						"{redirect-uri}",
-						encodeURI(config.beaconRedirectUri)
-					)
-					.replace(/\n/g, "")}`
-			};
-		} catch (error: any) {
-			if (
-				// Adjust the error checking based on your ORM and database
-				error instanceof PrismaClientKnownRequestError &&
-				error.code === "P2002" // Unique constraint failed
-			) {
-				// Duplicate key error, increment attempt count and retry
-				attemptCount++;
-				continue;
-			} else {
-				// Re-throw any other errors
-				throw error;
-			}
+	const challenge = await generateCodeChallenge();
+	const state = `${uuidv4()}`;
+	await db.codeChallenge.create({
+		data: {
+			challenge: challenge.challengeHash,
+			challengeVerifier: challenge.verifier,
+			state
 		}
-	}
-
-	throw new Error(
-		"Unable to generate unique code challenge after multiple attempts"
-	);
+	});
+	console.log({
+		challenge: challenge.challengeHash,
+		challenge_verifier: challenge.verifier,
+		state,
+		url: `${config.beaconLoginUri}${beaconLoginQuery
+			.replace("{client-generated-state}", state)
+			.replace("{client-generated-rsa-public-key}", publicKey)
+			.replace("{client-id}", config.beaconClientId)
+			.replace("{client-generated-challenge}", challenge.challengeHash)
+			.replace("{redirect-uri}", encodeURI(config.beaconRedirectUri))
+			.replace(/\n/g, "")}`
+	});
+	return {
+		challenge: challenge.challengeHash,
+		challenge_verifier: challenge.verifier,
+		state,
+		url: `${config.beaconLoginUri}${beaconLoginQuery
+			.replace("{client-generated-state}", state)
+			.replace("{client-generated-rsa-public-key}", publicKey)
+			.replace("{client-id}", config.beaconClientId)
+			.replace("{client-generated-challenge}", challenge.challengeHash)
+			.replace("{redirect-uri}", encodeURI(config.beaconRedirectUri))
+			.replace(/\n/g, "")}`
+	};
 };
